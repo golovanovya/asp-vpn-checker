@@ -69,27 +69,13 @@ public class VPNChecker : IVPNChecker
         int j = 0;
         while (i < list1.Count && j < list2.Count)
         {
-            if (list1[i].Item1 < list2[j].Item1)
+            if (list1[i].Item1 <= list2[j].Item1)
             {
                 merged.Add(list1[i]);
                 i++;
-            }
-            else if (list1[i].Item1 > list2[j].Item1)
+            } else if (list1[i].Item1 > list2[j].Item1)
             {
                 merged.Add(list2[j]);
-                j++;
-            }
-            else
-            {
-                if (list1[i].Item2 < list2[j].Item2)
-                {
-                    merged.Add(new Tuple<UInt32, UInt32>(list1[i].Item1, list2[j].Item2));
-                }
-                else
-                {
-                    merged.Add(new Tuple<UInt32, UInt32>(list1[i].Item1, list2[j].Item2));
-                }
-                i++;
                 j++;
             }
         }
@@ -102,6 +88,27 @@ public class VPNChecker : IVPNChecker
         {
             merged.Add(list2[j]);
             j++;
+        }
+        return merged;
+    }
+
+    private List<Tuple<UInt32, UInt32>> MergeOverlappinInets(List<Tuple<UInt32, UInt32>> inets)
+    {
+        List<Tuple<UInt32, UInt32>> merged = [];
+        if (inets.Count == 0) {
+            return merged;
+        }
+        merged.Add(inets[0]);
+        for (int i = 0; i < inets.Count; i++)
+        {
+            Tuple<UInt32, UInt32> last = merged[merged.Count - 1];
+            Tuple<UInt32, UInt32> current = inets[i];
+
+            if (last.Item2 >= (current.Item1 - 1)) {
+                merged[merged.Count - 1] = new Tuple<UInt32, UInt32>(last.Item1, Math.Max(last.Item2, current.Item2));
+            } else {
+                merged.Add(current);
+            }
         }
         return merged;
     }
@@ -119,6 +126,7 @@ public class VPNChecker : IVPNChecker
         foreach (var path in paths) {
             current = Parse(path);
             _inets = Merge(_inets, current);
+            _inets = MergeOverlappinInets(_inets);
         }
         
         _logger.LogInformation($"Loaded {_inets.Count()} VPN ranges.");
